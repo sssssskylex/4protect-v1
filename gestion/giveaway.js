@@ -5,7 +5,6 @@ const db = require("quick.db");
 const owner = new db.table("Owner");
 const pga = new db.table("PermGa");
 const cl = new db.table("Color");
-const ml = new db.table("giveawaylog");
 
 module.exports = {
   name: "giveaway",
@@ -15,7 +14,7 @@ module.exports = {
     if (
       owner.get(`owners.${message.author.id}`) ||
       message.member.roles.cache.has(pga.fetch(`permga_${message.guild.id}`)) ||
-      config.bot.buyer.includes(message.author.id) === true
+      config.bot.buyer.includes(message.author.id)
     ) {
       let color = cl.fetch(`color_${message.guild.id}`) || config.bot.couleur;
 
@@ -207,12 +206,11 @@ module.exports = {
               break;
 
             case "channel":
-              let ch =
+              const ch =
                 message.guild.channels.cache.get(newValue) ||
                 message.mentions.channels.first() ||
                 message.guild.channels.cache.find(
-                  (c) =>
-                    c.name.toLowerCase() === newValue.toLowerCase().replace("#", "")
+                  (c) => c.name.toLowerCase() === newValue.toLowerCase().replace("#", "")
                 );
               if (!ch) {
                 return message.channel.send("Salon invalide, essayez à nouveau.");
@@ -238,17 +236,74 @@ module.exports = {
               }
               break;
 
-           case "requiredRoles":
-  if (newValue.toLowerCase() === "aucun") {
-    giveaway.requiredRoles = [];
-  } else {
-    const roles = newValue
-      .split(/\s+/)
-      .map((r) =>
-        r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r
-      );
-    giveaway.requiredRoles = roles;
-  }
-  break;
+            case "requiredRoles":
+              if (newValue.toLowerCase() === "aucun") {
+                giveaway.requiredRoles = [];
+              } else {
+                giveaway.requiredRoles = newValue
+                  .split(/\s+/)
+                  .map((r) => (r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r));
+              }
+              break;
 
-                 
+            case "bannedRoles":
+              if (newValue.toLowerCase() === "aucun") {
+                giveaway.bannedRoles = [];
+              } else {
+                giveaway.bannedRoles = newValue
+                  .split(/\s+/)
+                  .map((r) => (r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r));
+              }
+              break;
+
+            case "requiredServers":
+              if (newValue.toLowerCase() === "aucun") {
+                giveaway.requiredServers = [];
+              } else {
+                giveaway.requiredServers = newValue.split(/\s+/);
+              }
+              break;
+
+            case "forcedWinners":
+              if (newValue.toLowerCase() === "aucun") {
+                giveaway.forcedWinners = [];
+              } else {
+                giveaway.forcedWinners = newValue.split(/\s+/);
+              }
+              break;
+
+            case "buttonText":
+              giveaway.buttonText = newValue;
+              break;
+
+            case "emoji":
+              giveaway.emoji = newValue;
+              break;
+
+            default:
+              break;
+          }
+
+          // Met à jour le message embed avec la nouvelle config
+          await interaction.editReply({ embeds: [createEmbed()], components: [rowMenu, rowButtons] });
+        }
+        else if (interaction.customId === "validate") {
+          await interaction.deferUpdate();
+          // Code pour lancer le giveaway (à compléter selon ta logique)
+          return message.channel.send("Giveaway lancé avec la configuration actuelle !");
+        }
+        else if (interaction.customId === "reactionMode") {
+          await interaction.deferUpdate();
+          // Code pour passer en mode réaction (à compléter selon ta logique)
+          return message.channel.send("Mode réaction activé !");
+        }
+      });
+
+      collector.on("end", () => {
+        giveawayMessage.edit({ components: [] }).catch(() => {});
+      });
+    } else {
+      return message.reply("Vous n'avez pas la permission d'utiliser cette commande.");
+    }
+  },
+};
