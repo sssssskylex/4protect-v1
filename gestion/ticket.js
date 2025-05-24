@@ -417,7 +417,7 @@ module.exports = {
                                             if (messag.embeds[0].author.iconURL) {
                                                 if (messag.embeds[0].author.url) embed.setAuthor({ name: messag.embeds[0].author.name, iconURL: messag.embeds[0].author.iconURL, url: messag.embeds[0].author.url })
                                                 embed.setAuthor({ name: messag.embeds[0].author.name, iconURL: messag.embeds[0].author.iconURL })
-                                            } else {
+                                                                                      } else {
                                                 embed.setAuthor({ name: messag.embeds[0].footer.name, url: messag.embeds[0].footer.url })
                                             }
                                         }
