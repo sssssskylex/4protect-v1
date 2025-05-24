@@ -423,21 +423,17 @@ module.exports = {
                                         }
                                         if (messag.embeds[0].url) {
                                             embed.setURL(messag.embeds[0].url)
-                                        }
-                                        if (messag.embeds[0].color) {
-                                            embed.setColor(messag.embeds[0].color)
-                                        }
-                                        if (messag.embeds[0].fields) {
-                                            messag.embeds[0].fields.forEach(async ee => {
-                                                embed.addField(ee.name, ee.value, ee.inline)
-                                            })
-                                        }
-                                        msgembed.edit({ embeds: [embed] })
-                                    })
-                            })
-                    }
-                })
-            })
-        }
-    }
+   if (messag.embeds[0].color) {
+    embed.setColor(messag.embeds[0].color);
 }
+
+if (messag.embeds[0].fields && messag.embeds[0].fields.length > 0) {
+    const fields = messag.embeds[0].fields.map(field => ({
+        name: field.name,
+        value: field.value,
+        inline: field.inline ?? false
+    }));
+    embed.addFields(fields);
+}
+
+msgembed.edit({ embeds: [embed] });
