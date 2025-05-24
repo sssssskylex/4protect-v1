@@ -423,7 +423,7 @@ module.exports = {
                                         }
                                         if (messag.embeds[0].url) {
                                             embed.setURL(messag.embeds[0].url)
-                                        }
+                                     }
                                         if (messag.embeds[0].color) {
                                             embed.setColor(messag.embeds[0].color)
                                         }
