@@ -206,8 +206,7 @@ module.exports = {
               question = "Quel est le **nombre de gagnants** ?";
               break;
             case "voiceRequired":
-              question =
-                "Présence en vocal obligatoire ? (oui/non)";
+              question = "Présence en vocal obligatoire ? (oui/non)";
               break;
             case "requiredRoles":
               question =
@@ -276,7 +275,8 @@ module.exports = {
                 message.guild.channels.cache.get(newValue) ||
                 message.mentions.channels.first() ||
                 message.guild.channels.cache.find(
-                  (c) => c.name.toLowerCase() === newValue.toLowerCase().replace("#", "")
+                  (c) =>
+                    c.name.toLowerCase() === newValue.toLowerCase().replace("#", "")
                 );
               if (!ch)
                 return message.channel.send("Salon invalide, essayez à nouveau.");
@@ -285,63 +285,4 @@ module.exports = {
 
             case "winners":
               const nb = parseInt(newValue);
-              if (isNaN(nb) || nb <= 0) {
-                return message.channel.send("Nombre de gagnants invalide, essayez à nouveau.");
-              }
-              giveaway.winners = nb;
-              break;
-
-            case "voiceRequired":
-              if (["oui", "yes", "y", "true"].includes(newValue.toLowerCase())) {
-                giveaway.voiceRequired = true;
-              } else if (["non", "no", "n", "false"].includes(newValue.toLowerCase())) {
-                giveaway.voiceRequired = false;
-              } else {
-                return message.channel.send("Réponse invalide, veuillez répondre par oui ou non.");
-              }
-              break;
-
-            case "requiredRoles":
-              if (newValue.toLowerCase() === "aucun") {
-                giveaway.requiredRoles = [];
-              } else {
-                const roles = newValue
-                  .split(/\s+/)
-                  .map((r) =>
-                    r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r
-                  )
-                  .filter((r) => message.guild.roles.cache.has(r));
-                if (roles.length === 0) {
-                  return message.channel.send("Rôles invalides, essayez à nouveau.");
-                }
-                giveaway.requiredRoles = roles;
-              }
-              break;
-
-            case "bannedRoles":
-              if (newValue.toLowerCase() === "aucun") {
-                giveaway.bannedRoles = [];
-              } else {
-                const roles = newValue
-                  .split(/\s+/)
-                  .map((r) =>
-                    r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r
-                  )
-                  .filter((r) => message.guild.roles.cache.has(r));
-                if (roles.length === 0) {
-                  return message.channel.send("Rôles invalides, essayez à nouveau.");
-                }
-                giveaway.bannedRoles = roles;
-              }
-              break;
-
-            case "requiredServers":
-              if (newValue.toLowerCase() === "aucun") {
-                giveaway.requiredServers = [];
-              } else {
-                giveaway.requiredServers = newValue.split(/\s+/);
-              }
-              break;
-
-            case "forcedWinners":
-              if (newValue
+              if (is
