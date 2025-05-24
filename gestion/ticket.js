@@ -1,443 +1,184 @@
-const ms = require('ms'),
-    { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
-
-const Discord = require("discord.js")
-const db = require('quick.db')
-const owner = new db.table("Owner")
-const config = require("../config")
+const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
+const db = require('quick.db');
+const owner = new db.table("Owner");
+const config = require("../config");
 
 module.exports = {
     name: 'ticket',
     usage: 'ticket',
-    description: `Permet de créer un système de ticket personnalisé`,
-    async execute(client, message, args) {
+    description: 'Permet de créer un système de ticket personnalisé',
+    async execute(client, message) {
+        if (!owner.get(`owners.${message.author.id}`) && !config.bot.buyer.includes(message.author.id)) return;
 
-        if (owner.get(`owners.${message.author.id}`) || config.bot.buyer.includes(message.author.id)   === true) {
+        const embed = new MessageEmbed().setDescription('\u200B');
 
-            let selectMenuOptions = [
-                {
-                    label: "Modifier le Titre",
-                    value: "embedtitle", emoji: "📝"
-                }, {
-                    label: "Modifier la Description",
-                    value: "embeddescription", emoji: "💬"
-                }, {
-                    label: "Modifier l'Auteur",
-                    value: "embedauthor", emoji: "🕵️‍♂️"
-                }, {
-                    label: "Modifier le Footer",
-                    value: "embedfooter", emoji: "🔻"
-                }, {
-                    label: "Modifier le Thumbnail",
-                    value: "embedthumbnail", emoji: "🔳"
-                }, {
-                    label: "Modifier le Timestamp",
-                    value: "embedtimestamp", emoji: "🕙"
-                }, {
-                    label: "Modifier l'Image",
-                    value: "embedimage", emoji: "🖼"
-                }, {
-                    label: "Modifier l'URL",
-                    value: "embedurl", emoji: "🌐"
-                }, {
-                    label: "Modifier la Couleur",
-                    value: "embedcolor", emoji: "🔴"
-                }, {
-                    label: "Ajouter un Field",
-                    value: "embedaddfield", emoji: "⤵"
-                }, {
-                    label: "Supprimer un Field",
-                    value: "embeddelfield", emoji: "⤴"
-                }, {
-                    label: "Copier un embed existant",
-                    value: "embedcopyother", emoji: "📩"
+        const options = [
+            { label: "Modifier le Titre", value: "embedtitle", emoji: "📝" },
+            { label: "Modifier la Description", value: "embeddescription", emoji: "💬" },
+            { label: "Modifier l'Auteur", value: "embedauthor", emoji: "🕵️‍♂️" },
+            { label: "Modifier le Footer", value: "embedfooter", emoji: "🔻" },
+            { label: "Modifier le Thumbnail", value: "embedthumbnail", emoji: "🔳" },
+            { label: "Modifier le Timestamp", value: "embedtimestamp", emoji: "🕙" },
+            { label: "Modifier l'Image", value: "embedimage", emoji: "🖼" },
+            { label: "Modifier l'URL", value: "embedurl", emoji: "🌐" },
+            { label: "Modifier la Couleur", value: "embedcolor", emoji: "🔴" },
+            { label: "Ajouter un Field", value: "embedaddfield", emoji: "⤵" },
+            { label: "Supprimer un Field", value: "embeddelfield", emoji: "⤴" },
+            { label: "Copier un embed existant", value: "embedcopyother", emoji: "📩" }
+        ];
+
+        const selectMenu = new MessageSelectMenu()
+            .setCustomId("embedbuilder")
+            .setPlaceholder("Choisissez une option")
+            .addOptions(options);
+
+        const sendButton = new MessageButton()
+            .setCustomId("embedsend")
+            .setStyle("SUCCESS")
+            .setLabel("Envoyer l'embed");
+
+        const actionRow = new MessageActionRow().addComponents(selectMenu);
+        const sendRow = new MessageActionRow().addComponents(sendButton);
+
+        const panelMsg = await message.channel.send({ content: `**Panel de création de tickets personnalisés de ${client.user}.**` });
+        const embedMsg = await message.channel.send({ embeds: [embed], components: [actionRow, sendRow] });
+
+        const filter = i => i.user.id === message.author.id;
+        const collector = embedMsg.createMessageComponentCollector({ filter, time: 900000 });
+
+        const ask = async (prompt) => {
+            const sent = await message.channel.send(prompt);
+            try {
+                const collected = await message.channel.awaitMessages({
+                    filter: m => m.author.id === message.author.id,
+                    max: 1,
+                    time: 60000,
+                    errors: ['time']
+                });
+                await sent.delete().catch(() => null);
+                const userMsg = collected.first();
+                await userMsg.delete().catch(() => null);
+                return userMsg.content;
+            } catch {
+                await sent.delete().catch(() => null);
+                return null;
+            }
+        };
+        collector.on("collect", async interaction => {
+            await interaction.deferUpdate();
+            const value = interaction.customId === 'embedbuilder' ? interaction.values[0] : interaction.customId;
+
+            switch (value) {
+                case 'embedtitle':
+                    const title = await ask("Quel sera le **Titre** de l'embed ?");
+                    if (!title || title.length > 256) return message.channel.send("Titre invalide ou trop long.");
+                    embed.setTitle(title);
+                    break;
+
+                case 'embeddescription':
+                    const desc = await ask("Quelle sera la **Description** de l'embed ?");
+                    if (!desc || desc.length > 4000) return message.channel.send("Description invalide ou trop longue.");
+                    embed.setDescription(desc);
+                    break;
+
+                case 'embedauthor': {
+                    const name = await ask("Nom de l'auteur ?");
+                    const icon = await ask("URL de l'avatar de l'auteur ? (laisser vide si aucun)");
+                    const url = await ask("URL du nom de l'auteur ? (laisser vide si aucun)");
+                    embed.setAuthor({ name, iconURL: icon || null, url: url || null });
+                    break;
                 }
-            ]
-            var selectMenu = new MessageSelectMenu()
-                .setCustomId("embedbuilder")
-                .setPlaceholder("Choisissez une option")
-                .addOptions([selectMenuOptions])
 
-            var b1 = new MessageButton()
-                .setCustomId("embedsend")
-                .setStyle("SUCCESS")
-                .setLabel("Envoyer l'embed")
+                case 'embedfooter': {
+                    const text = await ask("Texte du footer ?");
+                    const icon = await ask("URL de l'icône du footer ? (laisser vide si aucun)");
+                    embed.setFooter({ text, iconURL: icon || null });
+                    break;
+                }
 
-            var embedBuilderActionRow = new MessageActionRow()
-                .addComponents([selectMenu])
+                case 'embedthumbnail': {
+                    const url = await ask("URL du thumbnail ?");
+                    if (!url) return message.channel.send("URL invalide.");
+                    embed.setThumbnail(url);
+                    break;
+                }
 
-            var embedBuilderActionRowSendEdit = new MessageActionRow()
-                .addComponents([b1])
+                case 'embedtimestamp': {
+                    const timestamp = await ask("Timestamp personnalisé (format ISO) ou 'now' ?");
+                    embed.setTimestamp(timestamp && timestamp.toLowerCase() !== 'now' ? new Date(timestamp) : new Date());
+                    break;
+                }
 
-            let embed = (new MessageEmbed({ description: '\u200B' }))
+                case 'embedimage': {
+                    const url = await ask("URL de l'image ?");
+                    if (!url) return message.channel.send("URL invalide.");
+                    embed.setImage(url);
+                    break;
+                }
 
-            message.channel.send({ content: `**Panel de création de tickets personnalisés de ${client.user}.**` }).then(async d => {
-                let msgembed = await d.channel.send({ embeds: [embed], components: [embedBuilderActionRow, embedBuilderActionRowSendEdit] }).catch(async err => { return; })
-                const filter = m => message.author.id === m.author.id;
-                const filterSelect = i => message.author.id === i.user.id;
-                const collector = d.channel.createMessageComponentCollector({
-                    filterSelect,
-                    componentType: "SELECT_MENU",
-                })
-                const collectorX = d.channel.createMessageComponentCollector({
-                    filterSelect,
-                    componentType: "BUTTON",
-                })
+                case 'embedurl': {
+                    const url = await ask("Lien de l'embed (URL) ?");
+                    if (!url.startsWith("http")) return message.channel.send("URL invalide.");
+                    embed.setURL(url);
+                    break;
+                }
 
-                const row = new MessageActionRow()
-                    .addComponents(
-                        new MessageSelectMenu()
-                            .setCustomId('select')
-                            .setPlaceholder(`Cliquez sur l'un des menus.`)
-                            .addOptions([
-                                {
-                                    label: '❌',
-                                    description: 'Annuler',
-                                    value: 'rien',
-                                },
-                                {
-                                    label: '📧・ Ticket',
-                                    description: `Cliquez ici si vous souhaitez ouvrir un ticket`,
-                                    value: 'open',
-                                },
-                            ]),
-                    );
+                case 'embedcolor': {
+                    const color = await ask("Couleur hexadécimale ? (ex: #ff0000)");
+                    if (!/^#[0-9A-F]{6}$/i.test(color)) return message.channel.send("Couleur invalide.");
+                    embed.setColor(color);
+                    break;
+                }
+                case 'embedaddfield': {
+                    const name = await ask("Nom du field ?");
+                    const value = await ask("Valeur du field ?");
+                    const inlineAnswer = await ask("Afficher en inline ? (oui/non)");
+                    const inline = inlineAnswer?.toLowerCase() === 'oui';
+                    embed.addField(name, value, inline);
+                    break;
+                }
 
-                collectorX.on(`collect`, async (cld) => {
-                    if (cld.user.id !== message.author.id) return;
-                    cld.deferUpdate().catch(() => false)
-                    if (cld.customId === "embedsend") {
-                        var yx = await cld.message.channel.send({ content: "Dans quel salon voulez vous mettre le ticket ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var channel = cld.message.guild.channels.cache.get(collected.first().content) || collected.first().mentions.channels.first()
-                                if (!channel) return cld.message.channel.send({ content: "Salon introuvable." })
+                case 'embeddelfield': {
+                    const index = await ask("Index du field à supprimer ? (commence à 1)");
+                    const i = parseInt(index) - 1;
+                    if (isNaN(i) || i < 0 || i >= embed.fields.length) return message.channel.send("Index invalide.");
+                    embed.spliceFields(i, 1);
+                    break;
+                }
 
-                                channel.send({ embeds: [embed], components: [row] })
-                                collected.first().delete().catch(() => false)
-                                yx.delete().catch(() => false).catch(() => false)
-                                cld.message.channel.send({ content: "Ticket créé dans le salon **" + channel.name + "**." })
-                                cld.message.delete().catch(() => false);
-                                msgembed.delete().catch(() => false);
-                                d.delete();
-                            })
-                    } else if (cld.customId === "embededit") {
-                        var yx = await cld.message.channel.send({ content: "Dans quel salon est le message avec l'embed à éditer ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var channel = cld.message.guild.channels.cache.get(collected.first().content) || collected.first().mentions.channels.first()
-                                if (!channel) return cld.message.channel.send({ content: "Salon introuvable." })
-                                var yxy = await cld.message.channel.send({ content: "Quel est l'identifiant du message avec l'embed à éditer ?" })
-                                message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                    .then(async (collected2) => {
-                                        var msg = await channel.messages.fetch(collected2.first().content)
-                                        if (!msg) return cld.message.channel.send({ content: "Message introuvable." })
+                case 'embedcopyother': {
+                    const channelId = await ask("Mentionnez ou entrez l'ID du salon contenant l'embed.");
+                    const chan = message.mentions.channels.first() || message.guild.channels.cache.get(channelId.replace(/[<#>]/g, ""));
+                    if (!chan) return message.channel.send("Salon introuvable.");
 
-                                        msg.edit({ embeds: [embed] })
-                                        collected.first().delete().catch(() => false)
-                                        collected.first().delete().catch(() => false).catch(() => false)
-                                        yx.delete().catch(() => false).catch(() => false)
-                                        yxy.delete().catch(() => false)
-                                        cld.message.channel.send({ content: "Le message dans le salon**" + channel.name + "** avec l'embed à éditer a été édité." })
-                                        cld.message.delete().catch(() => false);
-                                        msgembed.delete().catch(() => false);
-                                        d.delete();
-                                    })
-                            })
-                    }
-                })
-                collector.on(`collect`, async (cld) => {
-                    if (cld.user.id !== message.author.id) return;
-                    const value = cld.values[0]
-                    cld.deferUpdate().catch(() => false)
-                    if (value === "embedtitle") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le **Titre** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (collected.first().content.length > 256) return cld.message.channel.send("Titre trop long (max 256 caractères).").then(async z => setTimeout(z.delete(), 2000))
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-                                embed.setTitle(collected.first().content)
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embeddescription") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera la **Description** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (collected.first().content.length > 6000) return cld.message.channel.send({ content: "Description trop longue (max 6000 caractères)." }).then(async z => setTimeout(z.delete(), 2000))
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-                                embed.setDescription(collected.first().content)
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedcolor") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera la **Couleur** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (/^#[0-9A-F]{6}$/i.test(collected.first().content) !== true) return message.channel.send({ content: "Couleur invalide." });
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-                                embed.setColor(collected.first().content)
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedauthor") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le nom de l'**Auteur** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (collected.first().content.length > 64) return cld.message.channel.send({ content: "Nom trop long." }).then(async z => setTimeout(z.delete(), 2000))
-                                var yxy = await cld.message.channel.send({ content: "Quel sera l'avatar de l'**Auteur** de l'embed ?" })
-                                message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                    .then(async (collected2) => {
-                                        var yxx = await cld.message.channel.send({ content: "Quel sera l'url de l'**Auteur** de l'embed ?" })
-                                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                            .then(async (collected3) => {
-                                                var a;
-                                                var b;
+                    const msgId = await ask("Entrez l'ID du message contenant l'embed.");
+                    const msg = await chan.messages.fetch(msgId).catch(() => null);
+                    if (!msg || !msg.embeds.length) return message.channel.send("Aucun embed trouvé.");
 
-                                                if (collected2.first().attachments.size > 0) {
-                                                    collected2.first().attachments.forEach(async at => {
-                                                        a = at.url
-                                                    })
+                    const source = msg.embeds[0];
+                    embed.setTitle(source.title || null);
+                    embed.setDescription(source.description || null);
+                    embed.setColor(source.color || null);
+                    embed.setImage(source.image?.url || null);
+                    embed.setThumbnail(source.thumbnail?.url || null);
+                    embed.setURL(source.url || null);
+                    embed.setAuthor(source.author || null);
+                    embed.setFooter(source.footer || null);
+                    embed.setFields(source.fields || []);
+                    break;
+                }
 
-                                                } else if (/^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|svg)\??.*$/gmi.test(collected2.first().content) === true) {
-                                                    a = collected2.first().content
-                                                } else {
-                                                    a = false
-                                                }
+                case 'embedsend': {
+                    const chanInput = await ask("Mentionnez le salon où envoyer l'embed.");
+                    const targetChan = message.mentions.channels.first() || message.guild.channels.cache.get(chanInput.replace(/[<#>]/g, ""));
+                    if (!targetChan) return message.channel.send("Salon introuvable.");
+                    await targetChan.send({ embeds: [embed] });
+                    return message.channel.send(`Embed envoyé dans **${targetChan.name}**.`);
+                }
 
-                                                if (/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)/.test(collected3.first().content) === true) {
-                                                    b = collected3.first().content
-                                                } else {
-                                                    b = false
-                                                }
-                                                collected3.first().delete();
-                                                collected.first().delete().catch(() => false)
-                                                collected.first().delete().catch(() => false);
-                                                yx.delete().catch(() => false)
-                                                yxy.delete().catch(() => false);
-                                                yxx.delete();
+                default:
+                    message.channel.send("Option non reconnue.");
+            }
 
-                                                if (a === false) {
-                                                    if (b === false) embed.setAuthor({ name: collected.first().content });
-                                                    else embed.setAuthor({ name: collected.first().content, url: collected3.first().content });
-                                                } else if (a !== false) {
-                                                    if (b === false) embed.setAuthor({ name: collected.first().content, iconURL: a.toString() });
-                                                    else embed.setAuthor({ name: collected.first().content, iconURL: a.toString(), url: collected3.first().content });
-                                                }
-                                                msgembed.edit({ embeds: [embed] })
-                                            })
-                                    })
-                            })
-                    } else if (value === "embedfooter") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le texte du **Footer** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (collected.first().content.length > 64) return cld.message.channel.send({ content: "Texte trop long." }).then(async z => setTimeout(z.delete(), 2000))
-                                var yxy = await cld.message.channel.send({ content: "Quel sera l'icône du **Footer** de l'embed ?" })
-                                message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                    .then(async (collected2) => {
-                                        var a;
-
-                                        if (collected2.first().attachments.size > 0) {
-                                            collected2.first().attachments.forEach(async at => {
-                                                a = at.url
-                                            })
-
-                                        } else if (/^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|svg)\??.*$/gmi.test(collected2.first().content) === true) {
-                                            a = collected2.first().content
-                                        } else {
-                                            a = false
-                                        }
-
-                                        collected.first().delete().catch(() => false)
-                                        collected.first().delete().catch(() => false);
-                                        yx.delete().catch(() => false)
-                                        yxy.delete().catch(() => false);
-
-                                        if (a === false) {
-                                            embed.setFooter({ text: collected.first().content });
-                                        } else if (a !== false) {
-                                            embed.setFooter({ text: collected.first().content, iconURL: a.toString() });
-                                        }
-                                        msgembed.edit({ embeds: [embed] })
-                                    })
-                            })
-                    } else if (value === "embedthumbnail") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le **Thumnail** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var a;
-
-                                if (collected.first().attachments.size > 0) {
-                                    collected.first().attachments.forEach(async at => {
-                                        a = at.url
-                                    })
-
-                                } else if (/^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|svg)\??.*$/gmi.test(collected.first().content) === true) {
-                                    a = collected.first().content
-                                } else {
-                                    a = false
-                                }
-
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-
-                                if (a === false) {
-                                    return collected.message.channel.send({ content: "L'image voulue est invalide." })
-                                } else if (a !== false) {
-                                    embed.setThumbnail(a.toString());
-                                }
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedimage") {
-                        var yx = await cld.message.channel.send({ content: "Quelle sera l'**Image** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var a;
-
-                                if (collected.first().attachments.size > 0) {
-                                    collected.first().attachments.forEach(async at => {
-                                        a = at.url
-                                    })
-
-                                } else if (/^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|svg)\??.*$/gmi.test(collected.first().content) === true) {
-                                    a = collected.first().content
-                                } else {
-                                    a = false
-                                }
-
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-
-                                if (a === false) {
-                                    return collected.message.channel.send({ content: "L'image voulue est invalide." })
-                                } else if (a !== false) {
-                                    embed.setImage(a.toString());
-                                }
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedtimestamp") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le **Timestamp** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var a;
-                                if (/^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/.test(collected.first().content) === true) {
-                                    a = collected.first().content
-                                } else {
-                                    a = false
-                                }
-
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-
-                                if (a !== false) {
-                                    embed.setTimestamp(new Date(a));
-                                } else if (a === false) {
-                                    embed.setTimestamp(new Date());
-                                }
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedurl") {
-                        var yx = await cld.message.channel.send({ content: "Quelle sera l'**URL** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var a;
-                                if (/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)/.test(collected.first().content) === true) {
-                                    a = collected.first().content
-                                } else {
-                                    a = false
-                                }
-
-                                collected.first().delete().catch(() => false);
-                                yx.delete().catch(() => false)
-
-                                if (a === false) {
-                                    return cld.message.channel.send({ content: "URL invalide." })
-                                } else if (a !== false) {
-                                    embed.setURL(a);
-                                }
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedaddfield") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le nom du **Field** ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (collected.first().content.length > 128) return cld.message.channel.send({ content: "Nom trop long." })
-                                var yxy = await cld.message.channel.send({ content: "Quel sera la description du **Field** ?" })
-                                message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                    .then(async (collected2) => {
-                                        if (embed.fields.length === 25) return cld.message.channel.send({ content: "Il y a trop de fields sur cet embed." })
-                                        collected.first().delete().catch(() => false);
-                                        collected.first().delete().catch(() => false)
-                                        yx.delete().catch(() => false)
-                                        yxy.delete().catch(() => false);
-
-                                        embed.addField(collected.first().content, collected2.first().content);
-                                        msgembed.edit({ embeds: [embed] })
-                                    })
-                            })
-                    } else if (value === "embeddelfield") {
-                        var yx = await cld.message.channel.send({ content: "Quel est la position du **Field** ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (embed.fields.length < 1) return cld.message.channel.send({ content: "Aucun field trouvé sur l'embed." })
-                                if (isNaN(collected.first().content)) return cld.message.channel.send({ content: "La valeur spécifiée doit être un nombre." })
-                                if (collected.first().content > embed.fields.length) return cld.message.channel.send({ content: "La position est trop élevée." })
-                                var indexField = Number(collected.first().content) - 1
-                                embed.spliceFields(indexField, 1)
-                                msgembed.edit({ embeds: [embed] })
-                            })
-                    } else if (value === "embedcopyother") {
-                        var yx = await cld.message.channel.send({ content: "Quel est le salon où envoyer l'**Embed** ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                var channel = cld.message.guild.channels.cache.get(collected.first().content) || collected.first().mentions.channels.first()
-                                if (!channel) return cld.message.channel.send({ content: "Salon introuvable." })
-                                var yxy = await cld.message.channel.send({ content: "Quel est le message de l'**Embed** ?" })
-                                message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                    .then(async (collected2) => {
-                                        var messag = await channel.messages.fetch(collected2.first().content)
-                                        if (!messag) return cld.message.channel.send({ content: "Message introuvable." })
-                                        collected.first().delete().catch(() => false);
-                                        collected.first().delete().catch(() => false)
-                                        yx.delete().catch(() => false)
-                                        yxy.delete().catch(() => false);
-                                        embed = new MessageEmbed({ description: "\u200B" })
-                                        if (!messag.embeds) return cld.message.channel.send({ content: "Aucun embed trouvé dans le message spécifié." });
-                                        if (messag.embeds.length < 1) return cld.message.channel.send({ content: "Aucun embed trouvé dans le message spécifié." });
-                                        if (messag.embeds[0].title) embed.setTitle(messag.embeds[0].title)
-                                        if (messag.embeds[0].description) embed.setDescription(messag.embeds[0].description)
-                                        if (messag.embeds[0].image) embed.setImage(messag.embeds[0].image.url)
-                                        if (messag.embeds[0].thumbnail) embed.setThumbnail(messag.embeds[0].thumbnail.url)
-                                        if (messag.embeds[0].footer) {
-                                            if (messag.embeds[0].footer.iconURL) embed.setFooter({text: messag.embeds[0].footer.text, iconURL: messag.embeds[0].footer.iconURL})
-                                            else embed.setFooter({text: messag.embeds[0].footer.text, iconURL: messag.embeds[0].footer.iconURL})
-                                        }
-                                        if (messag.embeds[0].author) {
-                                            if (messag.embeds[0].author.iconURL) {
-                                                if (messag.embeds[0].author.url) embed.setAuthor({ name: messag.embeds[0].author.name, iconURL: messag.embeds[0].author.iconURL, url: messag.embeds[0].author.url })
-                                                embed.setAuthor({ name: messag.embeds[0].author.name, iconURL: messag.embeds[0].author.iconURL })
-                                            } else {
-                                                embed.setAuthor({ name: messag.embeds[0].footer.name, url: messag.embeds[0].footer.url })
-                                            }
-                                        }
-                                        if (messag.embeds[0].url) {
-                                            embed.setURL(messag.embeds[0].url)
-                                        }
-                                        if (messag.embeds[0].color) {
-                                            embed.setColor(messag.embeds[0].color)
-                                        }
-                                        if (messag.embeds[0].fields) {
-                                            messag.embeds[0].fields.forEach(async ee => {
-                                                embed.addField(ee.name, ee.value, ee.inline)
-                                            })
-                                        }
-                                        msgembed.edit({ embeds: [embed] })
-                                    })
-                            })
-                    }
-                })
-            })
-        }
-    }
-}
+            await embedMsg.edit({ embeds: [embed] });
+        });
