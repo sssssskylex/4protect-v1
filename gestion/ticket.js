@@ -228,36 +228,52 @@ module.exports = {
                                             })
                                     })
                             })
-                    } else if (value === "embedfooter") {
-                        var yx = await cld.message.channel.send({ content: "Quel sera le texte du **Footer** de l'embed ?" })
-                        message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                            .then(async (collected) => {
-                                if (collected.first().content.length > 64) return cld.message.channel.send({ content: "Texte trop long." }).then(async z => setTimeout(z.delete(), 2000))
-                                var yxy = await cld.message.channel.send({ content: "Quel sera l'icône du **Footer** de l'embed ?" })
-                                message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
-                                    .then(async (collected2) => {
-                                        var a;
+  } else if (value === "embedfooter") {
+    var yx = await message.channel.send({ content: "Quel sera le texte du **Footer** de l'embed ?" });
+    message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
+        .then(async (collected) => {
+            const footerText = collected.first().content;
+            if (footerText.length > 64) {
+                return message.channel.send({ content: "Texte trop long." }).then(async z => setTimeout(() => z.delete().catch(() => false), 2000));
+            }
 
-                                        if (collected2.first().attachments.size > 0) {
-                                            collected2.first().attachments.forEach(async at => {
-                                                a = at.url
-                                            })
+            var yxy = await message.channel.send({ content: "Quel sera l'icône du **Footer** de l'embed ?" });
+            message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ["time"] })
+                .then(async (collected2) => {
+                    let a;
+                    const footerIconCandidate = collected2.first().content;
 
-                                        } else if (/^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|svg)\??.*$/gmi.test(collected2.first().content) === true) {
-                                            a = collected2.first().content
-                                        } else {
-                                            a = false
-                                        }
+                    if (collected2.first().attachments.size > 0) {
+                        a = collected2.first().attachments.first().url;
+                    } else if (/^https?:\/\/.*\.(png|gif|webp|jpeg|jpg|svg)(\?.*)?$/i.test(footerIconCandidate)) {
+                        a = footerIconCandidate;
+                    } else {
+                        a = false;
+                    }
 
-                                        collected.first().delete().catch(() => false)
-                                        collected.first().delete().catch(() => false);
-                                        yx.delete().catch(() => false)
-                                        yxy.delete().catch(() => false);
+                    // Nettoyage
+                    collected.first().delete().catch(() => false);
+                    collected2.first().delete().catch(() => false);
+                    yx.delete().catch(() => false);
+                    yxy.delete().catch(() => false);
 
-                                        if (a === false) {
-                                            embed.setFooter({ text: collected.first().content });
-                                        } else if (a !== false) {
-                                            embed.setFooter({ text: collected.first().content, iconURL: a.toString() });
+                    // Application dans l'embed
+                    if (a === false) {
+                        embed.setFooter({ text: footerText });
+                    } else {
+                        embed.setFooter({ text: footerText, iconURL: a.toString() });
+                    }
+
+                    msgembed.edit({ embeds: [embed] });
+                })
+                .catch(() => {
+                    message.channel.send({ content: "⏱ Temps écoulé pour l'icône du Footer." });
+                });
+        })
+        .catch(() => {
+            message.channel.send({ content: "⏱ Temps écoulé pour le texte du Footer." });
+        });
+
                                         }
                                         msgembed.edit({ embeds: [embed] })
                                     })
