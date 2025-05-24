@@ -417,27 +417,24 @@ module.exports = {
                                             if (messag.embeds[0].author.iconURL) {
                                                 if (messag.embeds[0].author.url) embed.setAuthor({ name: messag.embeds[0].author.name, iconURL: messag.embeds[0].author.iconURL, url: messag.embeds[0].author.url })
                                                 embed.setAuthor({ name: messag.embeds[0].author.name, iconURL: messag.embeds[0].author.iconURL })
-                                            } else {
-                                                embed.setAuthor({ name: messag.embeds[0].footer.name, url: messag.embeds[0].footer.url })
-                                            }
-                                        }
-                                        if (messag.embeds[0].url) {
-                                            embed.setURL(messag.embeds[0].url)
-                                        }
-                                        if (messag.embeds[0].color) {
-                                            embed.setColor(messag.embeds[0].color)
-                                        }
-                                        if (messag.embeds[0].fields) {
-                                            messag.embeds[0].fields.forEach(async ee => {
-                                                embed.addField(ee.name, ee.value, ee.inline)
-                                            })
-                                        }
-                                        msgembed.edit({ embeds: [embed] })
-                                    })
-                            })
-                    }
-                })
-            })
-        }
-    }
+} else {
+    embed.setAuthor({ name: messag.embeds[0].footer.name, url: messag.embeds[0].footer.url })
+}
+
+if (messag.embeds[0].url) {
+    embed.setURL(messag.embeds[0].url)
+}
+if (messag.embeds[0].color) {
+    embed.setColor(messag.embeds[0].color)
+}
+if (messag.embeds[0].fields) {
+    messag.embeds[0].fields.forEach(async ee => {
+        embed.addField(ee.name, ee.value, ee.inline)
+    })
+}
+msgembed.edit({ embeds: [embed] })
+})
+})
+})
+}
 }
