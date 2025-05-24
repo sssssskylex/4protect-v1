@@ -95,7 +95,7 @@ module.exports = {
         const choice = interaction.values[0];
 
         // On demande à l'utilisateur la nouvelle valeur par message
-        message.channel.send(`Veuillez entrer la nouvelle valeur pour **${choice}**:`);
+        message.channel.send(`Quel est le gain du giveaway ?`);
 
         // Collecteur de message
         const msgFilter = m => m.author.id === message.author.id;
