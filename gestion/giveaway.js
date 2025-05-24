@@ -38,7 +38,7 @@ module.exports = {
       // Fonction pour créer l'embed d'aperçu du giveaway
       const createEmbed = () => {
         return new Discord.MessageEmbed()
-          .setTitle("🎉 Configuration du Giveaway 🎉")
+          .setTitle("Paramètres du giveaway ")
           .setColor(color)
           .addField("Gain", giveaway.prize, true)
           .addField("Durée", giveaway.duration, true)
