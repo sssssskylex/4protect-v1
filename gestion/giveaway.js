@@ -19,7 +19,6 @@ module.exports = {
     ) {
       let color = cl.fetch(`color_${message.guild.id}`) || config.bot.couleur;
 
-      // Variables giveaway initiales
       let giveaway = {
         prize: "Nitro Boost",
         duration: "30m",
@@ -34,7 +33,6 @@ module.exports = {
         emoji: "🎉",
       };
 
-      // Fonction pour créer l'embed d'aperçu du giveaway
       const createEmbed = () => {
         return new Discord.MessageEmbed()
           .setTitle("🎉 Configuration du Giveaway 🎉")
@@ -43,9 +41,7 @@ module.exports = {
           .addField("Durée", giveaway.duration || "Non défini", true)
           .addField(
             "Salon",
-            giveaway.channel
-              ? `<#${giveaway.channel.id}>`
-              : "Non défini",
+            giveaway.channel ? `<#${giveaway.channel.id}>` : "Non défini",
             true
           )
           .addField("Nombre de gagnants", giveaway.winners.toString(), true)
@@ -88,71 +84,25 @@ module.exports = {
           .setTimestamp();
       };
 
-      // Création du menu déroulant
       const selectMenu = new Discord.MessageSelectMenu()
         .setCustomId("giveawayConfig")
         .setPlaceholder("Sélectionne une option à modifier")
         .addOptions([
-          {
-            label: "Gain",
-            description: "Modifier le gain du giveaway",
-            value: "prize",
-          },
-          {
-            label: "Durée",
-            description: "Modifier la durée du giveaway",
-            value: "duration",
-          },
-          {
-            label: "Salon",
-            description: "Modifier le salon du giveaway",
-            value: "channel",
-          },
-          {
-            label: "Nombre de gagnants",
-            description: "Modifier le nombre de gagnants",
-            value: "winners",
-          },
-          {
-            label: "Présence en vocal obligatoire",
-            description: "Modifier la présence en vocal obligatoire",
-            value: "voiceRequired",
-          },
-          {
-            label: "Rôles requis",
-            description: "Modifier les rôles requis",
-            value: "requiredRoles",
-          },
-          {
-            label: "Rôles interdits",
-            description: "Modifier les rôles interdits",
-            value: "bannedRoles",
-          },
-          {
-            label: "Serveurs requis",
-            description: "Modifier les serveurs requis",
-            value: "requiredServers",
-          },
-          {
-            label: "Gagnants imposés",
-            description: "Modifier les gagnants imposés",
-            value: "forcedWinners",
-          },
-          {
-            label: "Texte du bouton",
-            description: "Modifier le texte du bouton",
-            value: "buttonText",
-          },
-          {
-            label: "Emoji",
-            description: "Modifier l'emoji du giveaway",
-            value: "emoji",
-          },
+          { label: "Gain", description: "Modifier le gain du giveaway", value: "prize" },
+          { label: "Durée", description: "Modifier la durée du giveaway", value: "duration" },
+          { label: "Salon", description: "Modifier le salon du giveaway", value: "channel" },
+          { label: "Nombre de gagnants", description: "Modifier le nombre de gagnants", value: "winners" },
+          { label: "Présence en vocal obligatoire", description: "Modifier la présence en vocal obligatoire", value: "voiceRequired" },
+          { label: "Rôles requis", description: "Modifier les rôles requis", value: "requiredRoles" },
+          { label: "Rôles interdits", description: "Modifier les rôles interdits", value: "bannedRoles" },
+          { label: "Serveurs requis", description: "Modifier les serveurs requis", value: "requiredServers" },
+          { label: "Gagnants imposés", description: "Modifier les gagnants imposés", value: "forcedWinners" },
+          { label: "Texte du bouton", description: "Modifier le texte du bouton", value: "buttonText" },
+          { label: "Emoji", description: "Modifier l'emoji du giveaway", value: "emoji" },
         ]);
 
       const rowMenu = new Discord.MessageActionRow().addComponents(selectMenu);
 
-      // Boutons valider et réaction
       const buttonValidate = new Discord.MessageButton()
         .setCustomId("validate")
         .setLabel("Valider")
@@ -163,12 +113,8 @@ module.exports = {
         .setLabel("Passer en mode réaction")
         .setStyle("SECONDARY");
 
-      const rowButtons = new Discord.MessageActionRow().addComponents(
-        buttonValidate,
-        buttonReaction
-      );
+      const rowButtons = new Discord.MessageActionRow().addComponents(buttonValidate, buttonReaction);
 
-      // Envoi du message avec embed + menu + boutons
       const giveawayMessage = await message.channel.send({
         embeds: [createEmbed()],
         components: [rowMenu, rowButtons],
@@ -176,9 +122,7 @@ module.exports = {
 
       const filter = (interaction) =>
         interaction.user.id === message.author.id &&
-        (interaction.customId === "giveawayConfig" ||
-          interaction.customId === "validate" ||
-          interaction.customId === "reactionMode");
+        ["giveawayConfig", "validate", "reactionMode"].includes(interaction.customId);
 
       const collector = giveawayMessage.createMessageComponentCollector({
         filter,
@@ -195,12 +139,10 @@ module.exports = {
               question = "Quel est le **gain** du giveaway ?";
               break;
             case "duration":
-              question =
-                "Quelle est la **durée** du giveaway ? (ex: 30s, 15m, 2h, 1d)";
+              question = "Quelle est la **durée** du giveaway ? (ex: 30s, 15m, 2h, 1d)";
               break;
             case "channel":
-              question =
-                "Quel est le **salon** du giveaway ? (ID, mention ou #nom)";
+              question = "Quel est le **salon** du giveaway ? (ID, mention ou #nom)";
               break;
             case "winners":
               question = "Quel est le **nombre de gagnants** ?";
@@ -209,20 +151,16 @@ module.exports = {
               question = "Présence en vocal obligatoire ? (oui/non)";
               break;
             case "requiredRoles":
-              question =
-                "Quels sont les **rôles requis** ? (IDs, mentions séparées par espace ou 'aucun')";
+              question = "Quels sont les **rôles requis** ? (IDs, mentions séparées par espace ou 'aucun')";
               break;
             case "bannedRoles":
-              question =
-                "Quels sont les **rôles interdits** ? (IDs, mentions séparées par espace ou 'aucun')";
+              question = "Quels sont les **rôles interdits** ? (IDs, mentions séparées par espace ou 'aucun')";
               break;
             case "requiredServers":
-              question =
-                "Quels sont les **serveurs requis** ? (IDs séparés par espace ou 'aucun')";
+              question = "Quels sont les **serveurs requis** ? (IDs séparés par espace ou 'aucun')";
               break;
             case "forcedWinners":
-              question =
-                "Quels sont les **gagnants imposés** ? (IDs séparés par espace ou 'aucun')";
+              question = "Quels sont les **gagnants imposés** ? (IDs séparés par espace ou 'aucun')";
               break;
             case "buttonText":
               question = "Quel est le **texte du bouton** ?";
@@ -234,7 +172,6 @@ module.exports = {
               question = "Veuillez entrer la nouvelle valeur :";
           }
 
-          // Envoi de la question
           const botMsg = await message.channel.send(question);
 
           const msgFilter = (m) => m.author.id === message.author.id;
@@ -253,11 +190,10 @@ module.exports = {
           const userMsg = collected.first();
           const newValue = userMsg.content.trim();
 
-          // Supprimer messages question et réponse
           await botMsg.delete().catch(() => {});
           await userMsg.delete().catch(() => {});
 
-          // Traitement selon choix
+          // Validation et mise à jour selon le champ modifié
           switch (interaction.values[0]) {
             case "prize":
               giveaway.prize = newValue;
@@ -278,11 +214,36 @@ module.exports = {
                   (c) =>
                     c.name.toLowerCase() === newValue.toLowerCase().replace("#", "")
                 );
-              if (!ch)
+              if (!ch) {
                 return message.channel.send("Salon invalide, essayez à nouveau.");
+              }
               giveaway.channel = ch;
               break;
 
             case "winners":
               const nb = parseInt(newValue);
-              if (is
+              if (isNaN(nb) || nb <= 0) {
+                return message.channel.send("Nombre de gagnants invalide, essayez à nouveau.");
+              }
+              giveaway.winners = nb;
+              break;
+
+            case "voiceRequired":
+              if (["oui", "yes", "y", "true"].includes(newValue.toLowerCase())) {
+                giveaway.voiceRequired = true;
+              } else if (["non", "no", "n", "false"].includes(newValue.toLowerCase())) {
+                giveaway.voiceRequired = false;
+              } else {
+                return message.channel.send("Réponse invalide, veuillez répondre par oui ou non.");
+              }
+              break;
+
+            case "requiredRoles":
+              if (newValue.toLowerCase() === "aucun") {
+                giveaway.requiredRoles = [];
+              } else {
+                const roles = newValue
+                  .split(/\s+/)
+                  .map((r) =>
+                    r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r
+                 
