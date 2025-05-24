@@ -238,12 +238,17 @@ module.exports = {
               }
               break;
 
-            case "requiredRoles":
-              if (newValue.toLowerCase() === "aucun") {
-                giveaway.requiredRoles = [];
-              } else {
-                const roles = newValue
-                  .split(/\s+/)
-                  .map((r) =>
-                    r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r
+           case "requiredRoles":
+  if (newValue.toLowerCase() === "aucun") {
+    giveaway.requiredRoles = [];
+  } else {
+    const roles = newValue
+      .split(/\s+/)
+      .map((r) =>
+        r.match(/^<@&(\d+)>$/) ? r.match(/^<@&(\d+)>$/)[1] : r
+      );
+    giveaway.requiredRoles = roles;
+  }
+  break;
+
                  
