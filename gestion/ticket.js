@@ -71,7 +71,7 @@ module.exports = {
 
             let embed = (new MessageEmbed({ description: '\u200B' }))
 
-            message.channel.send({ content: `**Panel de création de tickets personnalisés de ${client.user}.**` }).then(async d => {
+            message.channel.send({ content: `**Création d'un panel de ticket**` }).then(async d => {
                 let msgembed = await d.channel.send({ embeds: [embed], components: [embedBuilderActionRow, embedBuilderActionRowSendEdit] }).catch(async err => { return; })
                 const filter = m => message.author.id === m.author.id;
                 const filterSelect = i => message.author.id === i.user.id;
