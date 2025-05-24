@@ -28,7 +28,7 @@ module.exports = {
         .addField('Salon', '📚・annonce-tempo', true)
         .addField('Nombre de gagnants', '1', true)
         .setColor(color)
-        .setFooter('ζ͜͡Crow Bots');
+        .setFooter('ζ͜͡Dev by ay');
 
       // Création du menu déroulant (select menu) v13
       const selectMenu = new Discord.MessageSelectMenu()
